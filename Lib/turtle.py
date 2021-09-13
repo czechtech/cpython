@@ -100,11 +100,15 @@ extensions in mind. These will be commented and documented elsewhere.
 
 """
 
-_ver = "turtle 1.1b- - for Python 3.1   -  4. 5. 2009"
+_ver = "chelonian 0 - Python Turtle for Colab   -  12/2020"
 
 # print(_ver)
 
-import tkinter as TK
+#import tkinter as TK
+import svgwrite as svg # https://pypi.org/project/svgwrite/
+import webcolors # to verify colorstring values
+import threading # ontimer events
+from IPython.display import display, HTML
 import types
 import math
 import time
@@ -113,9 +117,9 @@ import sys
 
 from os.path import isfile, split, join
 from copy import deepcopy
-from tkinter import simpledialog
+#from tkinter import simpledialog
 
-_tg_classes = ['ScrolledCanvas', 'TurtleScreen', 'Screen',
+_tg_classes = ['TurtleScreen', 'Screen',
                'RawTurtle', 'Turtle', 'RawPen', 'Pen', 'Shape', 'Vec2D']
 _tg_screen_functions = ['addshape', 'bgcolor', 'bgpic', 'bye',
         'clearscreen', 'colormode', 'delay', 'exitonclick', 'getcanvas',
@@ -149,7 +153,8 @@ _alias_list = ['addshape', 'backward', 'bk', 'fd', 'ht', 'lt', 'pd', 'pos',
 _CFG = {"width" : 0.5,               # Screen
         "height" : 0.75,
         "canvwidth" : 400,
-        "canvheight": 300,
+        #"canvheight": 300,
+        "canvheight": 400,
         "leftright": None,
         "topbottom": None,
         "mode": "standard",          # TurtleScreen
@@ -286,175 +291,320 @@ class Vec2D(tuple):
 ## helper functions for Scrolled Canvas, to forward Canvas-methods
 ## to ScrolledCanvas class
 
-def __methodDict(cls, _dict):
-    """helper function for Scrolled Canvas"""
-    baseList = list(cls.__bases__)
-    baseList.reverse()
-    for _super in baseList:
-        __methodDict(_super, _dict)
-    for key, value in cls.__dict__.items():
-        if type(value) == types.FunctionType:
-            _dict[key] = value
+# def __methodDict(cls, _dict):
+#     """helper function for Scrolled Canvas"""
+#     baseList = list(cls.__bases__)
+#     baseList.reverse()
+#     for _super in baseList:
+#         __methodDict(_super, _dict)
+#     for key, value in cls.__dict__.items():
+#         if type(value) == types.FunctionType:
+#             _dict[key] = value
 
-def __methods(cls):
-    """helper function for Scrolled Canvas"""
-    _dict = {}
-    __methodDict(cls, _dict)
-    return _dict.keys()
+# def __methods(cls):
+#     """helper function for Scrolled Canvas"""
+#     _dict = {}
+#     __methodDict(cls, _dict)
+#     return _dict.keys()
 
-__stringBody = (
-    'def %(method)s(self, *args, **kw): return ' +
-    'self.%(attribute)s.%(method)s(*args, **kw)')
+# __stringBody = (
+#     'def %(method)s(self, *args, **kw): return ' +
+#     'self.%(attribute)s.%(method)s(*args, **kw)')
 
-def __forwardmethods(fromClass, toClass, toPart, exclude = ()):
-    ### MANY CHANGES ###
-    _dict_1 = {}
-    __methodDict(toClass, _dict_1)
-    _dict = {}
-    mfc = __methods(fromClass)
-    for ex in _dict_1.keys():
-        if ex[:1] == '_' or ex[-1:] == '_' or ex in exclude or ex in mfc:
-            pass
-        else:
-            _dict[ex] = _dict_1[ex]
+# def __forwardmethods(fromClass, toClass, toPart, exclude = ()):
+#     ### MANY CHANGES ###
+#     _dict_1 = {}
+#     __methodDict(toClass, _dict_1)
+#     _dict = {}
+#     mfc = __methods(fromClass)
+#     for ex in _dict_1.keys():
+#         if ex[:1] == '_' or ex[-1:] == '_' or ex in exclude or ex in mfc:
+#             pass
+#         else:
+#             _dict[ex] = _dict_1[ex]
+# 
+#     for method, func in _dict.items():
+#         d = {'method': method, 'func': func}
+#         if isinstance(toPart, str):
+#             execString = \
+#                 __stringBody % {'method' : method, 'attribute' : toPart}
+#         exec(execString, d)
+#         setattr(fromClass, method, d[method])   ### NEWU!
 
-    for method, func in _dict.items():
-        d = {'method': method, 'func': func}
-        if isinstance(toPart, str):
-            execString = \
-                __stringBody % {'method' : method, 'attribute' : toPart}
-        exec(execString, d)
-        setattr(fromClass, method, d[method])   ### NEWU!
+def _viewbox(window_width, window_height):
+    min_x = window_width / -2
+    min_y = window_height / -2
+    return '{0} {1} {2} {3}'.format(min_x, min_y, window_width, window_height)
 
-
-class ScrolledCanvas(TK.Frame):
+#class ScrolledCanvas(TK.Frame):
+class SVGCanvas():
     """Modeled after the scrolled canvas class from Grayons's Tkinter book.
-
+    
     Used as the default canvas, which pops up automatically when
     using turtle graphics functions or the Turtle class.
     """
-    def __init__(self, master, width=500, height=350,
-                                          canvwidth=600, canvheight=500):
-        TK.Frame.__init__(self, master, width=width, height=height)
-        self._rootwindow = self.winfo_toplevel()
+    #def __init__(self, master, width=500, height=350, canvwidth=400, canvheight=500):
+    def __init__(self, master, width=400, height=400, canvwidth=400, canvheight=400):
+        #TK.Frame.__init__(self, master, width=width, height=height)
+        #self._rootwindow = self.winfo_toplevel()
         self.width, self.height = width, height
+        self._config = {}
         self.canvwidth, self.canvheight = canvwidth, canvheight
-        self.bg = "white"
-        self._canvas = TK.Canvas(master, width=width, height=height,
-                                 bg=self.bg, relief=TK.SUNKEN, borderwidth=2)
-        self.hscroll = TK.Scrollbar(master, command=self._canvas.xview,
-                                    orient=TK.HORIZONTAL)
-        self.vscroll = TK.Scrollbar(master, command=self._canvas.yview)
-        self._canvas.configure(xscrollcommand=self.hscroll.set,
-                               yscrollcommand=self.vscroll.set)
-        self.rowconfigure(0, weight=1, minsize=0)
-        self.columnconfigure(0, weight=1, minsize=0)
-        self._canvas.grid(padx=1, in_ = self, pady=1, row=0,
-                column=0, rowspan=1, columnspan=1, sticky='news')
-        self.vscroll.grid(padx=1, in_ = self, pady=1, row=0,
-                column=1, rowspan=1, columnspan=1, sticky='news')
-        self.hscroll.grid(padx=1, in_ = self, pady=1, row=1,
-                column=0, rowspan=1, columnspan=1, sticky='news')
-        self.reset()
-        self._rootwindow.bind('<Configure>', self.onResize)
+        self._drawing = svg.Drawing(None, profile='tiny', viewBox=_viewbox(canvwidth,canvheight), size=(canvwidth,canvheight))
+        self.bg = "white" # DJC: maybe don't do this in the constructor
+        #self._canvas = TK.Canvas(master, width=width, height=height,bg=self.bg, relief=TK.SUNKEN, borderwidth=2)
+        self._xml = ""
+        self.update()
+        #self.hscroll = TK.Scrollbar(master, command=self._canvas.xview,
+        #                            orient=TK.HORIZONTAL)
+        #self.vscroll = TK.Scrollbar(master, command=self._canvas.yview)
+        #self._canvas.configure(xscrollcommand=self.hscroll.set,
+        #                       yscrollcommand=self.vscroll.set)
+        #self.rowconfigure(0, weight=1, minsize=0)
+        #self.columnconfigure(0, weight=1, minsize=0)
+        #self._canvas.grid(padx=1, in_ = self, pady=1, row=0,
+        #        column=0, rowspan=1, columnspan=1, sticky='news')
+        #self.vscroll.grid(padx=1, in_ = self, pady=1, row=0,
+        #        column=1, rowspan=1, columnspan=1, sticky='news')
+        #self.hscroll.grid(padx=1, in_ = self, pady=1, row=1,
+        #        column=0, rowspan=1, columnspan=1, sticky='news')
+        #self.reset()
+        #self._rootwindow.bind('<Configure>', self.onResize)
 
-    def reset(self, canvwidth=None, canvheight=None, bg = None):
-        """Adjust canvas and scrollbars according to given canvas size."""
-        if canvwidth:
-            self.canvwidth = canvwidth
-        if canvheight:
-            self.canvheight = canvheight
-        if bg:
-            self.bg = bg
-        self._canvas.config(bg=bg,
-                        scrollregion=(-self.canvwidth//2, -self.canvheight//2,
-                                       self.canvwidth//2, self.canvheight//2))
-        self._canvas.xview_moveto(0.5*(self.canvwidth - self.width + 30) /
-                                                               self.canvwidth)
-        self._canvas.yview_moveto(0.5*(self.canvheight- self.height + 30) /
-                                                              self.canvheight)
-        self.adjustScrolls()
-
-
-    def adjustScrolls(self):
-        """ Adjust scrollbars according to window- and canvas-size.
-        """
-        cwidth = self._canvas.winfo_width()
-        cheight = self._canvas.winfo_height()
-        self._canvas.xview_moveto(0.5*(self.canvwidth-cwidth)/self.canvwidth)
-        self._canvas.yview_moveto(0.5*(self.canvheight-cheight)/self.canvheight)
-        if cwidth < self.canvwidth or cheight < self.canvheight:
-            self.hscroll.grid(padx=1, in_ = self, pady=1, row=1,
-                              column=0, rowspan=1, columnspan=1, sticky='news')
-            self.vscroll.grid(padx=1, in_ = self, pady=1, row=0,
-                              column=1, rowspan=1, columnspan=1, sticky='news')
+    def add(self, element):
+        return self._drawing.add(element)
+    
+    def delete(self, item):
+        if item is not "all":
+            self._drawing.elements.remove(item)
         else:
-            self.hscroll.grid_forget()
-            self.vscroll.grid_forget()
+            self._drawing.elements.clear()
 
-    def onResize(self, event):
-        """self-explanatory"""
-        self.adjustScrolls()
+    def update(self):
+        self._xml = self._drawing.tostring()
+    
+    def xmlstring(self):
+        return self._xml
 
-    def bbox(self, *args):
-        """ 'forward' method, which canvas itself has inherited...
-        """
-        return self._canvas.bbox(*args)
+    def after(self, delay, fun=None):
+        if not fun:
+            time.sleep(delay/1000)
+        else:
+            threading.Timer(delay/1000,fun).start()
 
-    def cget(self, *args, **kwargs):
-        """ 'forward' method, which canvas itself has inherited...
-        """
-        return self._canvas.cget(*args, **kwargs)
+    def after_idle(self, fun):
+        fun()
+
+    def cget(self, *args, **kwargs): # kwargs??
+        return [self._config[arg] for arg in args]
 
     def config(self, *args, **kwargs):
-        """ 'forward' method, which canvas itself has inherited...
-        """
-        self._canvas.config(*args, **kwargs)
+        for arg in args:
+            self._config[arg] = True
+        for key in kwargs.keys():
+            self._config[key] = kwargs[key]
 
-    def bind(self, *args, **kwargs):
-        """ 'forward' method, which canvas itself has inherited...
-        """
-        self._canvas.bind(*args, **kwargs)
+    def winfo_rgb(self, color):
+        try: 
+            return webcolors.name_to_rgb(color)
+        except ValueError:
+            # SVGTurtle uses HTML color names.  Removing spaces from color names may resolve this, so try again...
+            pass
+        return webcolors.name_to_rgb(color.replace(" ", ""))
+    
+    def winfo_width(self):
+        return self.width
 
-    def unbind(self, *args, **kwargs):
-        """ 'forward' method, which canvas itself has inherited...
-        """
-        self._canvas.unbind(*args, **kwargs)
+    def winfo_height(self):
+        return self.height
 
-    def focus_force(self):
-        """ 'forward' method, which canvas itself has inherited...
-        """
-        self._canvas.focus_force()
+    def type(self, item):
+        #return self.cv.type(item)
+        if isinstance(item, svg.image.Image):
+            return 'image'
+        elif isinstance(item, svg.shapes.Polyline):
+            return 'line'
+        elif isinstance(item, svg.shapes.Polygon):
+            return 'polygon'
+        else:
+            print("_type could not determine type of", item)
+            return None
 
-__forwardmethods(ScrolledCanvas, TK.Canvas, '_canvas')
+    def coords(self, item):
+        if isinstance(item, svg.shapes.Polyline):
+            return item.points
+        elif isinstance(item, svg.shapes.Polygon):
+            return item.points
+        #elif isinstance(item, svg.shapes.Line):
+        #    return ( (item['x1'],item['y1']),(item['x2'],item['y2']) )
+        #else:
+        print("_pointslist unsupported for", item)
+        return None
+
+    def bgcolor(self, color):
+        self.winfo_rgb(color) # Validate the color name
+        if self._drawing.elements == [] or self._drawing.elements[0]["id"] != 'bgcolor':
+            bg = self._drawing.rect(insert=(-self.canvwidth/2,-self.canvheight/2), size=("100%","100%"), id='bgcolor')
+            self._drawing.elements.insert(0, bg)
+        self._drawing.elements[0]["fill"] = color
+    
+    def bgpic(self, picname):
+        print("SVGCanvas.bgpic", picname)
+        if self._drawing.elements == [] or self._drawing.elements[0]["id"] != 'bgcolor':
+            self.bgcolor("white") # assumption
+        if len(self._drawing.elements) < 2 or self._drawing.elements[1]["id"] != 'bgpic':
+            bgpic = self._drawing.image(picname)
+            self._drawing.elements.insert(1, bgpic)
+        self._drawing.elements[1]["href"] = picname
+
+    # Factory Methods
+    #def line(self, start=(0,0), end=(0,0), **extra):
+    #    return self._drawing.line(start=start, end=end, **extra)
+    
+    #def rect(self, insert=(0, 0), size=(1, 1), **extra):
+    #    return self._drawing.rect(insert=insert, size=size, **extra)
+
+    def circle(self, center=(0, 0), r=1, **extra):
+        return self._drawing.circle(center=center, r=r, **extra)
+
+    def polyline(self, **extra):
+        return self._drawing.polyline(**extra)
+
+    def polygon(self, **extra):
+        return self._drawing.polygon(**extra)
+
+    def text(self, text, **extra):
+        return self._drawing.text(text, **extra)
+
+    def image(self, href, **extra):
+        return self._drawing.image(href, **extra)
+
+#     def reset(self, canvwidth=None, canvheight=None, bg = None):
+#         """Adjust canvas and scrollbars according to given canvas size."""
+#         if canvwidth:
+#             self.canvwidth = canvwidth
+#         if canvheight:
+#             self.canvheight = canvheight
+#         if bg:
+#             self.bg = bg
+#         self._canvas.config(bg=bg,
+#                         scrollregion=(-self.canvwidth//2, -self.canvheight//2,
+#                                        self.canvwidth//2, self.canvheight//2))
+#         self._canvas.xview_moveto(0.5*(self.canvwidth - self.width + 30) /
+#                                                                self.canvwidth)
+#         self._canvas.yview_moveto(0.5*(self.canvheight- self.height + 30) /
+#                                                               self.canvheight)
+#         self.adjustScrolls()
+# 
+#     def adjustScrolls(self):
+#         """ Adjust scrollbars according to window- and canvas-size.
+#         """
+#         cwidth = self._canvas.winfo_width()
+#         cheight = self._canvas.winfo_height()
+#         self._canvas.xview_moveto(0.5*(self.canvwidth-cwidth)/self.canvwidth)
+#         self._canvas.yview_moveto(0.5*(self.canvheight-cheight)/self.canvheight)
+#         if cwidth < self.canvwidth or cheight < self.canvheight:
+#             self.hscroll.grid(padx=1, in_ = self, pady=1, row=1,
+#                               column=0, rowspan=1, columnspan=1, sticky='news')
+#             self.vscroll.grid(padx=1, in_ = self, pady=1, row=0,
+#                               column=1, rowspan=1, columnspan=1, sticky='news')
+#         else:
+#             self.hscroll.grid_forget()
+#             self.vscroll.grid_forget()
+# 
+#     def onResize(self, event):
+#         """self-explanatory"""
+#         self.adjustScrolls()
+# 
+#     def bbox(self, *args):
+#         """ 'forward' method, which canvas itself has inherited...
+#         """
+#         return self._canvas.bbox(*args)
+# 
+#     def cget(self, *args, **kwargs):
+#         """ 'forward' method, which canvas itself has inherited...
+#         """
+#         return self._canvas.cget(*args, **kwargs)
+# 
+#     def config(self, *args, **kwargs):
+#         """ 'forward' method, which canvas itself has inherited...
+#         """
+#         self._canvas.config(*args, **kwargs)
+# 
+#     def bind(self, *args, **kwargs):
+#         """ 'forward' method, which canvas itself has inherited...
+#         """
+#         self._canvas.bind(*args, **kwargs)
+# 
+#     def unbind(self, *args, **kwargs):
+#         """ 'forward' method, which canvas itself has inherited...
+#         """
+#         self._canvas.unbind(*args, **kwargs)
+# 
+#     def focus_force(self):
+#         """ 'forward' method, which canvas itself has inherited...
+#         """
+#         self._canvas.focus_force()
+
+# __forwardmethods(ScrolledCanvas, TK.Canvas, '_canvas')
 
 
-class _Root(TK.Tk):
+#class _Root(TK.Tk):
+class _Root():
     """Root class for Screen based on Tkinter."""
     def __init__(self):
-        TK.Tk.__init__(self)
+        #TK.Tk.__init__(self)
+        self._title = ""
+
+    def title(self, title):
+        #super().title(title)
+        if title is not None:
+            self._title = title
+        else:
+            return self._title
 
     def setupcanvas(self, width, height, cwidth, cheight):
-        self._canvas = ScrolledCanvas(self, width, height, cwidth, cheight)
-        self._canvas.pack(expand=1, fill="both")
+        #self._canvas = ScrolledCanvas(self, width, height, cwidth, cheight)
+        self._canvas = SVGCanvas(self, width, height, cwidth, cheight)
+        #self._canvas.pack(expand=1, fill="both")
 
     def _getcanvas(self):
         return self._canvas
 
     def set_geometry(self, width, height, startx, starty):
-        self.geometry("%dx%d%+d%+d"%(width, height, startx, starty))
+        #self.geometry("%dx%d%+d%+d"%(width, height, startx, starty))
+        print("_Root.set_geometry not supported")
 
     def ondestroy(self, destroy):
-        self.wm_protocol("WM_DELETE_WINDOW", destroy)
+        #self.wm_protocol("WM_DELETE_WINDOW", destroy)
+        print("_Root.ondestroy not supported", destroy)
 
     def win_width(self):
-        return self.winfo_screenwidth()
+        #return self.winfo_screenwidth()
+        return self._canvas.width
 
     def win_height(self):
-        return self.winfo_screenheight()
+        #return self.winfo_screenheight()
+        return self._canvas.height
 
-Canvas = TK.Canvas
+#Canvas = TK.Canvas
 
+# https://github.com/czechtech/ColabTurtle/blob/master/ColabTurtle/Turtle.py
+def _generateIPythonHTML(svg):
+    return """
+<head>
+<style>
+body {{
+    background-repeat: no-repeat;
+}}
+svg {{
+    border: 1px solid black;
+    filter: drop-shadow(2px 2px 2px #888888)
+}}
+</style>
+</head>
+{svgtag}
+""".format(svgtag=svg)
 
 class TurtleScreenBase(object):
     """Provide the basic graphics functionality.
@@ -468,34 +618,39 @@ class TurtleScreenBase(object):
     def _blankimage():
         """return a blank image object
         """
-        img = TK.PhotoImage(width=1, height=1)
-        img.blank()
-        return img
+        #img = TK.PhotoImage(width=1, height=1)
+        #img.blank()
+        return svg.image.Image("None", width=1, height=1)
 
     @staticmethod
-    def _image(filename):
-        """return an image object containing the
-        imagedata from a gif-file named filename.
+    def _image(url):
+        """return an svg image element that references the
+        hyperlink to the image resource.
         """
-        return TK.PhotoImage(file=filename)
+        # This image is not yet a child of the canvas
+        #return TK.PhotoImage(file=filename)
+        return svg.image.Image(url)
 
     def __init__(self, cv):
         self.cv = cv
-        if isinstance(cv, ScrolledCanvas):
+        #if isinstance(cv, ScrolledCanvas):
+        if isinstance(cv, SVGCanvas):
             w = self.cv.canvwidth
             h = self.cv.canvheight
-        else:  # expected: ordinary TK.Canvas
-            w = int(self.cv.cget("width"))
-            h = int(self.cv.cget("height"))
-            self.cv.config(scrollregion = (-w//2, -h//2, w//2, h//2 ))
+        #else:  # expected: ordinary TK.Canvas
+        #    w = int(self.cv.cget("width"))
+        #    h = int(self.cv.cget("height"))
+        #    self.cv.config(scrollregion = (-w//2, -h//2, w//2, h//2 ))
         self.canvwidth = w
         self.canvheight = h
         self.xscale = self.yscale = 1.0
+        self._display = display(HTML(_generateIPythonHTML(self.cv.xmlstring())), display_id=True) # DJC
 
     def _createpoly(self):
-        """Create an invisible polygon item on canvas self.cv)
+        """Create an invisible polygon item on svg drawing self.dwg)
         """
-        return self.cv.create_polygon((0, 0, 0, 0, 0, 0), fill="", outline="")
+        #return self.cv.create_polygon((0, 0, 0, 0, 0, 0), fill="", outline="")
+        return self.cv.add(self.cv.polygon())
 
     def _drawpoly(self, polyitem, coordlist, fill=None,
                   outline=None, width=None, top=False):
@@ -510,23 +665,34 @@ class TurtleScreenBase(object):
         """
         cl = []
         for x, y in coordlist:
-            cl.append(x * self.xscale)
-            cl.append(-y * self.yscale)
-        self.cv.coords(polyitem, *cl)
+            #cl.append(x * self.xscale)
+            #cl.append(-y * self.yscale)
+            cl.append( ( (x * self.xscale),(-y * self.yscale) ) )
+        #self.cv.coords(polyitem, *cl)
+        polyitem.points = cl
         if fill is not None:
-            self.cv.itemconfigure(polyitem, fill=fill)
+            #self.cv.itemconfigure(polyitem, fill=fill)
+            polyitem.fill = fill
         if outline is not None:
-            self.cv.itemconfigure(polyitem, outline=outline)
+            #self.cv.itemconfigure(polyitem, outline=outline)
+            polyitem.outline = outline
         if width is not None:
-            self.cv.itemconfigure(polyitem, width=width)
+            #self.cv.itemconfigure(polyitem, width=width)
+            polyitem.width = width
         if top:
-            self.cv.tag_raise(polyitem)
+            #self.cv.tag_raise(polyitem)
+            if self.cv._drawing.elements[-1] != polyitem:
+                self.cv._drawing.elements.remove(polyitem)
+                self.cv._drawing.elements.append(polyitem)
+
 
     def _createline(self):
         """Create an invisible line item on canvas self.cv)
         """
-        return self.cv.create_line(0, 0, 0, 0, fill="", width=2,
-                                   capstyle = TK.ROUND)
+        #return self.cv.create_line(0, 0, 0, 0, fill="", width=2, capstyle = TK.ROUND)
+        pl = self.cv.polyline(points=[(0,0)])
+        pl["fill"] = "none" # SVG's default of fill needs to be matched to Turtle's
+        return self.cv.add(pl)
 
     def _drawline(self, lineitem, coordlist=None,
                   fill=None, width=None, top=False):
@@ -541,15 +707,22 @@ class TurtleScreenBase(object):
         if coordlist is not None:
             cl = []
             for x, y in coordlist:
-                cl.append(x * self.xscale)
-                cl.append(-y * self.yscale)
-            self.cv.coords(lineitem, *cl)
-        if fill is not None:
-            self.cv.itemconfigure(lineitem, fill=fill)
+                #cl.append(x * self.xscale)
+                #cl.append(-y * self.yscale)
+                cl.append( (x*self.xscale, -y*self.yscale) )
+            #self.cv.coords(lineitem, *cl)
+            lineitem.points = cl
+        if fill is not None: # DJC: I think "fill" is a misnomer.  Every use of 'fill' passes in 'pencolor'
+            #self.cv.itemconfigure(lineitem, fill=fill)
+            lineitem["stroke"] = fill
         if width is not None:
-            self.cv.itemconfigure(lineitem, width=width)
+            #self.cv.itemconfigure(lineitem, width=width)
+            lineitem["stroke-width"] = width
         if top:
-            self.cv.tag_raise(lineitem)
+            #self.cv.tag_raise(lineitem)
+            if self.cv._drawing.elements[-1] != lineitem:
+                self.cv._drawing.elements.remove(lineitem)
+                self.cv._drawing.elements.append(lineitem)
 
     def _delete(self, item):
         """Delete graphics item from canvas.
@@ -561,18 +734,19 @@ class TurtleScreenBase(object):
         """Redraw graphics items on canvas
         """
         self.cv.update()
+        self._display.update(HTML(_generateIPythonHTML(self.cv.xmlstring())))
 
     def _delay(self, delay):
         """Delay subsequent canvas actions for delay ms."""
         self.cv.after(delay)
 
     def _iscolorstring(self, color):
-        """Check if the string color is a legal Tkinter color string.
+        """Check if the string color is a known color string.
         """
         try:
             rgb = self.cv.winfo_rgb(color)
             ok = True
-        except TK.TclError:
+        except ValueError:
             ok = False
         return ok
 
@@ -580,7 +754,11 @@ class TurtleScreenBase(object):
         """Set canvas' backgroundcolor if color is not None,
         else return backgroundcolor."""
         if color is not None:
-            self.cv.config(bg = color)
+            self.cv.bgcolor(color)
+            #self.cv.config(bg = color)
+            #self.cv.bg = color
+            #self.cv._drawing["viewport-fill"] = color
+            #self.cv._drawing["style"] = "background-color:"+color+";" # DJC: this is fragile! What if some other style needs to be set?!
             self._update()
         else:
             return self.cv.cget("bg")
@@ -592,12 +770,16 @@ class TurtleScreenBase(object):
         of text's bounding box."""
         x, y = pos
         x = x * self.xscale
-        y = y * self.yscale
-        anchor = {"left":"sw", "center":"s", "right":"se" }
-        item = self.cv.create_text(x-1, -y, text = txt, anchor = anchor[align],
-                                        fill = pencolor, font = font)
-        x0, y0, x1, y1 = self.cv.bbox(item)
-        self.cv.update()
+        y = -y * self.yscale
+        f_family, f_size, f_weight = font
+        #anchor = {"left":"sw", "center":"s", "right":"se" }
+        anchor = {"left":"start", "center":"middle", "right":"end"}
+        #item = self.cv.create_text(x-1, -y, text = txt, anchor = anchor[align], fill = pencolor, font = font)
+        item = self.cv.text(txt, insert=(x,y), fill=pencolor, text_anchor=anchor[align], font_family=f_family, font_weight=f_weight, font_size=f_size)
+        #x0, y0, x1, y1 = self.cv.bbox(item)
+        x1 = x + len(txt) * 1.333 * 0.5 * f_size # DJC: VERY approximate! 1.3 is pt->px, 0.5 is monospace ratio width:height
+        self.cv.add(item)
+        self._update()
         return item, x1-1
 
 ##    def _dot(self, pos, size, color):
@@ -609,14 +791,15 @@ class TurtleScreenBase(object):
         of the clicked point on the canvas.
         num, the number of the mouse-button defaults to 1
         """
-        if fun is None:
-            self.cv.tag_unbind(item, "<Button-%s>" % num)
-        else:
-            def eventfun(event):
-                x, y = (self.cv.canvasx(event.x)/self.xscale,
-                        -self.cv.canvasy(event.y)/self.yscale)
-                fun(x, y)
-            self.cv.tag_bind(item, "<Button-%s>" % num, eventfun, add)
+        #if fun is None:
+        #    self.cv.tag_unbind(item, "<Button-%s>" % num)
+        #else:
+        #    def eventfun(event):
+        #        x, y = (self.cv.canvasx(event.x)/self.xscale,
+        #                -self.cv.canvasy(event.y)/self.yscale)
+        #        fun(x, y)
+        #    self.cv.tag_bind(item, "<Button-%s>" % num, eventfun, add)
+        print("_onclick not yet supported")
 
     def _onrelease(self, item, fun, num=1, add=None):
         """Bind fun to mouse-button-release event on turtle.
@@ -627,15 +810,16 @@ class TurtleScreenBase(object):
         If a turtle is clicked, first _onclick-event will be performed,
         then _onscreensclick-event.
         """
-        if fun is None:
-            self.cv.tag_unbind(item, "<Button%s-ButtonRelease>" % num)
-        else:
-            def eventfun(event):
-                x, y = (self.cv.canvasx(event.x)/self.xscale,
-                        -self.cv.canvasy(event.y)/self.yscale)
-                fun(x, y)
-            self.cv.tag_bind(item, "<Button%s-ButtonRelease>" % num,
-                             eventfun, add)
+        #if fun is None:
+        #    self.cv.tag_unbind(item, "<Button%s-ButtonRelease>" % num)
+        #else:
+        #    def eventfun(event):
+        #        x, y = (self.cv.canvasx(event.x)/self.xscale,
+        #                -self.cv.canvasy(event.y)/self.yscale)
+        #        fun(x, y)
+        #    self.cv.tag_bind(item, "<Button%s-ButtonRelease>" % num,
+        #                     eventfun, add)
+        print("_onrelease not yet supported")
 
     def _ondrag(self, item, fun, num=1, add=None):
         """Bind fun to mouse-move-event (with pressed mouse button) on turtle.
@@ -646,17 +830,18 @@ class TurtleScreenBase(object):
         Every sequence of mouse-move-events on a turtle is preceded by a
         mouse-click event on that turtle.
         """
-        if fun is None:
-            self.cv.tag_unbind(item, "<Button%s-Motion>" % num)
-        else:
-            def eventfun(event):
-                try:
-                    x, y = (self.cv.canvasx(event.x)/self.xscale,
-                           -self.cv.canvasy(event.y)/self.yscale)
-                    fun(x, y)
-                except Exception:
-                    pass
-            self.cv.tag_bind(item, "<Button%s-Motion>" % num, eventfun, add)
+        #if fun is None:
+        #    self.cv.tag_unbind(item, "<Button%s-Motion>" % num)
+        #else:
+        #    def eventfun(event):
+        #        try:
+        #            x, y = (self.cv.canvasx(event.x)/self.xscale,
+        #                   -self.cv.canvasy(event.y)/self.yscale)
+        #            fun(x, y)
+        #        except Exception:
+        #            pass
+        #    self.cv.tag_bind(item, "<Button%s-Motion>" % num, eventfun, add)
+        print("_ondrag not yet supported")
 
     def _onscreenclick(self, fun, num=1, add=None):
         """Bind fun to mouse-click event on canvas.
@@ -667,48 +852,52 @@ class TurtleScreenBase(object):
         If a turtle is clicked, first _onclick-event will be performed,
         then _onscreensclick-event.
         """
-        if fun is None:
-            self.cv.unbind("<Button-%s>" % num)
-        else:
-            def eventfun(event):
-                x, y = (self.cv.canvasx(event.x)/self.xscale,
-                        -self.cv.canvasy(event.y)/self.yscale)
-                fun(x, y)
-            self.cv.bind("<Button-%s>" % num, eventfun, add)
+        #if fun is None:
+        #    self.cv.unbind("<Button-%s>" % num)
+        #else:
+        #    def eventfun(event):
+        #        x, y = (self.cv.canvasx(event.x)/self.xscale,
+        #                -self.cv.canvasy(event.y)/self.yscale)
+        #        fun(x, y)
+        #    self.cv.bind("<Button-%s>" % num, eventfun, add)
+        print("_onscreenclick not yet supported")
 
     def _onkeyrelease(self, fun, key):
         """Bind fun to key-release event of key.
         Canvas must have focus. See method listen
         """
-        if fun is None:
-            self.cv.unbind("<KeyRelease-%s>" % key, None)
-        else:
-            def eventfun(event):
-                fun()
-            self.cv.bind("<KeyRelease-%s>" % key, eventfun)
+        #if fun is None:
+        #    self.cv.unbind("<KeyRelease-%s>" % key, None)
+        #else:
+        #    def eventfun(event):
+        #        fun()
+        #    self.cv.bind("<KeyRelease-%s>" % key, eventfun)
+        print("_onkeyrelease not yet supported")
 
     def _onkeypress(self, fun, key=None):
         """If key is given, bind fun to key-press event of key.
         Otherwise bind fun to any key-press.
         Canvas must have focus. See method listen.
         """
-        if fun is None:
-            if key is None:
-                self.cv.unbind("<KeyPress>", None)
-            else:
-                self.cv.unbind("<KeyPress-%s>" % key, None)
-        else:
-            def eventfun(event):
-                fun()
-            if key is None:
-                self.cv.bind("<KeyPress>", eventfun)
-            else:
-                self.cv.bind("<KeyPress-%s>" % key, eventfun)
+        #if fun is None:
+        #    if key is None:
+        #        self.cv.unbind("<KeyPress>", None)
+        #    else:
+        #        self.cv.unbind("<KeyPress-%s>" % key, None)
+        #else:
+        #    def eventfun(event):
+        #        fun()
+        #    if key is None:
+        #        self.cv.bind("<KeyPress>", eventfun)
+        #    else:
+        #        self.cv.bind("<KeyPress-%s>" % key, eventfun)
+        print("_onkeypress not yet supported")
 
     def _listen(self):
         """Set focus on canvas (in order to collect key-events)
         """
-        self.cv.focus_force()
+        #self.cv.focus_force()
+        print("_listen not yet supported")
 
     def _ontimer(self, fun, t):
         """Install a timer, which calls fun after t milliseconds.
@@ -721,23 +910,33 @@ class TurtleScreenBase(object):
     def _createimage(self, image):
         """Create and return image item on canvas.
         """
-        return self.cv.create_image(0, 0, image=image)
+        #return self.cv.create_image(0, 0, image=image)
+        return self.cv.add(self._image(image or "None"))
 
     def _drawimage(self, item, pos, image):
         """Configure image item as to draw image object
         at position (x,y) on canvas)
         """
         x, y = pos
-        self.cv.coords(item, (x * self.xscale, -y * self.yscale))
-        self.cv.itemconfig(item, image=image)
+        #self.cv.coords(item, (x * self.xscale, -y * self.yscale))
+        #self.cv.itemconfig(item, image=image)
+        item = self.dwg.image(image, x=x*self.xscale, y=-y*self.yscale)
+        self.cv.add(item)
 
     def _setbgpic(self, item, image):
-        """Configure image item as to draw image object
+        """Configure image as to draw image object
         at center of canvas. Set item to the first item
         in the displaylist, so it will be drawn below
         any other item ."""
-        self.cv.itemconfig(item, image=image)
-        self.cv.tag_lower(item)
+        #self.cv.bgpic(image) # DJC canvas.bgpic may be where this code belongs
+
+        #self.cv.itemconfig(item, image=image)
+        self.cv.add(image) #self.cv.elements.insert(1, item)
+        image["id"] = "bgpic"
+        #self.cv.tag_lower(item)
+        self.cv.elements.remove(item)
+        item = image
+        
 
     def _type(self, item):
         """Return 'line' or 'polygon' or 'image' depending on
@@ -754,49 +953,56 @@ class TurtleScreenBase(object):
         (9.9999999999999982, 0.0)]
         >>> """
         cl = self.cv.coords(item)
-        pl = [(cl[i], -cl[i+1]) for i in range(0, len(cl), 2)]
-        return  pl
+        #pl = [(cl[i], -cl[i+1]) for i in range(0, len(cl), 2)]
+        #return  pl
+        return cl
 
     def _setscrollregion(self, srx1, sry1, srx2, sry2):
-        self.cv.config(scrollregion=(srx1, sry1, srx2, sry2))
+        #self.cv.config(scrollregion=(srx1, sry1, srx2, sry2))
+        print("_setscrollregion not supported yet")
 
     def _rescale(self, xscalefactor, yscalefactor):
-        items = self.cv.find_all()
-        for item in items:
-            coordinates = list(self.cv.coords(item))
-            newcoordlist = []
-            while coordinates:
-                x, y = coordinates[:2]
-                newcoordlist.append(x * xscalefactor)
-                newcoordlist.append(y * yscalefactor)
-                coordinates = coordinates[2:]
-            self.cv.coords(item, *newcoordlist)
+        #items = self.cv.find_all()
+        #for item in items:
+        #    coordinates = list(self.cv.coords(item))
+        #    newcoordlist = []
+        #    while coordinates:
+        #        x, y = coordinates[:2]
+        #        newcoordlist.append(x * xscalefactor)
+        #        newcoordlist.append(y * yscalefactor)
+        #        coordinates = coordinates[2:]
+        #    self.cv.coords(item, *newcoordlist)
+        print("_rescale not supported yet")
 
     def _resize(self, canvwidth=None, canvheight=None, bg=None):
         """Resize the canvas the turtles are drawing on. Does
         not alter the drawing window.
         """
-        # needs amendment
-        if not isinstance(self.cv, ScrolledCanvas):
-            return self.canvwidth, self.canvheight
-        if canvwidth is canvheight is bg is None:
-            return self.cv.canvwidth, self.cv.canvheight
-        if canvwidth is not None:
-            self.canvwidth = canvwidth
-        if canvheight is not None:
-            self.canvheight = canvheight
-        self.cv.reset(canvwidth, canvheight, bg)
+        ## needs amendment
+        #if not isinstance(self.cv, ScrolledCanvas):
+        #    return self.canvwidth, self.canvheight
+        #if canvwidth is canvheight is bg is None:
+        #    return self.cv.canvwidth, self.cv.canvheight
+        #if canvwidth is not None:
+        #    self.canvwidth = canvwidth
+        #if canvheight is not None:
+        #    self.canvheight = canvheight
+        #self.cv.reset(canvwidth, canvheight, bg)
+        print("_resize not supported yet")
+        return None
+
 
     def _window_size(self):
         """ Return the width and height of the turtle window.
         """
         width = self.cv.winfo_width()
-        if width <= 1:  # the window isn't managed by a geometry manager
-            width = self.cv['width']
+        #if width <= 1:  # the window isn't managed by a geometry manager
+        #    width = self.cv['width']
         height = self.cv.winfo_height()
-        if height <= 1: # the window isn't managed by a geometry manager
-            height = self.cv['height']
+        #if height <= 1: # the window isn't managed by a geometry manager
+        #    height = self.cv['height']
         return width, height
+
 
     def mainloop(self):
         """Starts event loop - calling Tkinter's mainloop function.
@@ -811,7 +1017,11 @@ class TurtleScreenBase(object):
         >>> screen.mainloop()
 
         """
-        TK.mainloop()
+        #TK.mainloop()
+        print("mainloop()")
+        #self.cv._drawing["style"] = "border: 1px solid red;"
+        self._update()
+        print(self.cv.xmlstring())
 
     def textinput(self, title, prompt):
         """Pop up a dialog window for input of a string.
@@ -826,7 +1036,9 @@ class TurtleScreenBase(object):
         >>> screen.textinput("NIM", "Name of first player:")
 
         """
-        return simpledialog.askstring(title, prompt)
+        #return simpledialog.askstring(title, prompt)
+        print("textinput not supported yet")
+        return None
 
     def numinput(self, title, prompt, default=None, minval=None, maxval=None):
         """Pop up a dialog window for input of a number.
@@ -846,8 +1058,9 @@ class TurtleScreenBase(object):
         >>> screen.numinput("Poker", "Your stakes:", 1000, minval=10, maxval=10000)
 
         """
-        return simpledialog.askfloat(title, prompt, initialvalue=default,
-                                     minvalue=minval, maxvalue=maxval)
+        print("numinput not supported yet")
+        return None
+        #return simpledialog.askfloat(title, prompt, initialvalue=default, minvalue=minval, maxvalue=maxval)
 
 
 ##############################################################################
@@ -1018,11 +1231,12 @@ class TurtleScreen(TurtleScreenBase):
         self._delayvalue = _CFG["delay"]
         self._colormode = _CFG["colormode"]
         self._delete("all")
-        self._bgpic = self._createimage("")
-        self._bgpicname = "nopic"
+        #self._bgpic = self._createimage("") # DJC
+        #self._bgpicname = "nopic" # DJC
         self._tracing = 1
         self._updatecounter = 0
         self._turtles = []
+        #self.bgpic("") # DJC: this prevents creating a new _image("")
         self.bgcolor("white")
         for btn in 1, 2, 3:
             self.onclick(None, btn)
@@ -1479,7 +1693,7 @@ class TurtleScreen(TurtleScreenBase):
         if picname is None:
             return self._bgpicname
         if picname not in self._bgpics:
-            self._bgpics[picname] = self._image(picname)
+            self._bgpics[picname] = self._image(picname) # DJC: should this be _createimage(picname) instead??
         self._setbgpic(self._bgpic, self._bgpics[picname])
         self._bgpicname = picname
 
@@ -3679,6 +3893,7 @@ class _Screen(TurtleScreen):
             _Screen._root = self._root = _Root()
             self._root.title(_Screen._title)
             self._root.ondestroy(self._destroy)
+            pass
         if _Screen._canvas is None:
             width = _CFG["width"]
             height = _CFG["height"]
@@ -3949,7 +4164,7 @@ def {name}{paramslist}:
         {obj} = {init}
     try:
         return {obj}.{name}{argslist}
-    except TK.TclError:
+    except TK.TclError:                   # DJC this fails because TK is no longer being included
         if not TurtleScreen._RUNNING:
             TurtleScreen._RUNNING = True
             raise Terminator
