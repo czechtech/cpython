@@ -449,7 +449,7 @@ class SVGCanvas():
         self._drawing.elements[0]["fill"] = color
     
     def bgpic(self, picname):
-        print("SVGCanvas.bgpic", picname)
+        #print("SVGCanvas.bgpic", picname)
         if self._drawing.elements == [] or self._drawing.elements[0]["id"] != 'bgcolor':
             self.bgcolor("white") # assumption
         if len(self._drawing.elements) < 2 or self._drawing.elements[1]["id"] != 'bgpic':
@@ -573,12 +573,14 @@ class _Root():
 
     def set_geometry(self, width, height, startx, starty):
         #self.geometry("%dx%d%+d%+d"%(width, height, startx, starty))
-        print("_Root.set_geometry not supported")
-
+        #print("_Root.set_geometry not supported")
+        pass
+        
     def ondestroy(self, destroy):
         #self.wm_protocol("WM_DELETE_WINDOW", destroy)
-        print("_Root.ondestroy not supported", destroy)
-
+        #print("_Root.ondestroy not supported", destroy)
+        pass
+      
     def win_width(self):
         #return self.winfo_screenwidth()
         return self._canvas.width
@@ -799,7 +801,8 @@ class TurtleScreenBase(object):
         #                -self.cv.canvasy(event.y)/self.yscale)
         #        fun(x, y)
         #    self.cv.tag_bind(item, "<Button-%s>" % num, eventfun, add)
-        print("_onclick not yet supported")
+        #print("_onclick not yet supported")
+        pass
 
     def _onrelease(self, item, fun, num=1, add=None):
         """Bind fun to mouse-button-release event on turtle.
@@ -819,7 +822,8 @@ class TurtleScreenBase(object):
         #        fun(x, y)
         #    self.cv.tag_bind(item, "<Button%s-ButtonRelease>" % num,
         #                     eventfun, add)
-        print("_onrelease not yet supported")
+        #print("_onrelease not yet supported")
+        pass
 
     def _ondrag(self, item, fun, num=1, add=None):
         """Bind fun to mouse-move-event (with pressed mouse button) on turtle.
@@ -841,7 +845,8 @@ class TurtleScreenBase(object):
         #        except Exception:
         #            pass
         #    self.cv.tag_bind(item, "<Button%s-Motion>" % num, eventfun, add)
-        print("_ondrag not yet supported")
+        #print("_ondrag not yet supported")
+        pass
 
     def _onscreenclick(self, fun, num=1, add=None):
         """Bind fun to mouse-click event on canvas.
@@ -860,7 +865,8 @@ class TurtleScreenBase(object):
         #                -self.cv.canvasy(event.y)/self.yscale)
         #        fun(x, y)
         #    self.cv.bind("<Button-%s>" % num, eventfun, add)
-        print("_onscreenclick not yet supported")
+        #print("_onscreenclick not yet supported")
+        pass
 
     def _onkeyrelease(self, fun, key):
         """Bind fun to key-release event of key.
@@ -872,7 +878,8 @@ class TurtleScreenBase(object):
         #    def eventfun(event):
         #        fun()
         #    self.cv.bind("<KeyRelease-%s>" % key, eventfun)
-        print("_onkeyrelease not yet supported")
+        #print("_onkeyrelease not yet supported")
+        pass
 
     def _onkeypress(self, fun, key=None):
         """If key is given, bind fun to key-press event of key.
@@ -891,13 +898,15 @@ class TurtleScreenBase(object):
         #        self.cv.bind("<KeyPress>", eventfun)
         #    else:
         #        self.cv.bind("<KeyPress-%s>" % key, eventfun)
-        print("_onkeypress not yet supported")
+        #print("_onkeypress not yet supported")
+        pass
 
     def _listen(self):
         """Set focus on canvas (in order to collect key-events)
         """
         #self.cv.focus_force()
-        print("_listen not yet supported")
+        #print("_listen not yet supported")
+        pass
 
     def _ontimer(self, fun, t):
         """Install a timer, which calls fun after t milliseconds.
@@ -959,7 +968,8 @@ class TurtleScreenBase(object):
 
     def _setscrollregion(self, srx1, sry1, srx2, sry2):
         #self.cv.config(scrollregion=(srx1, sry1, srx2, sry2))
-        print("_setscrollregion not supported yet")
+        #print("_setscrollregion not supported yet")
+        pass
 
     def _rescale(self, xscalefactor, yscalefactor):
         #items = self.cv.find_all()
@@ -972,7 +982,8 @@ class TurtleScreenBase(object):
         #        newcoordlist.append(y * yscalefactor)
         #        coordinates = coordinates[2:]
         #    self.cv.coords(item, *newcoordlist)
-        print("_rescale not supported yet")
+        #print("_rescale not supported yet")
+        pass
 
     def _resize(self, canvwidth=None, canvheight=None, bg=None):
         """Resize the canvas the turtles are drawing on. Does
@@ -988,7 +999,7 @@ class TurtleScreenBase(object):
         #if canvheight is not None:
         #    self.canvheight = canvheight
         #self.cv.reset(canvwidth, canvheight, bg)
-        print("_resize not supported yet")
+        #print("_resize not supported yet")
         return None
 
 
@@ -1018,10 +1029,10 @@ class TurtleScreenBase(object):
 
         """
         #TK.mainloop()
-        print("mainloop()")
+        #print("mainloop()")
         #self.cv._drawing["style"] = "border: 1px solid red;"
         self._update()
-        print(self.cv.xmlstring())
+        #print(self.cv.xmlstring())
 
     def textinput(self, title, prompt):
         """Pop up a dialog window for input of a string.
@@ -1037,7 +1048,7 @@ class TurtleScreenBase(object):
 
         """
         #return simpledialog.askstring(title, prompt)
-        print("textinput not supported yet")
+        #print("textinput not supported yet")
         return None
 
     def numinput(self, title, prompt, default=None, minval=None, maxval=None):
@@ -1058,7 +1069,7 @@ class TurtleScreenBase(object):
         >>> screen.numinput("Poker", "Your stakes:", 1000, minval=10, maxval=10000)
 
         """
-        print("numinput not supported yet")
+        #print("numinput not supported yet")
         return None
         #return simpledialog.askfloat(title, prompt, initialvalue=default, minvalue=minval, maxvalue=maxval)
 
