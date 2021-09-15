@@ -652,7 +652,7 @@ class TurtleScreenBase(object):
         """Create an invisible polygon item on svg drawing self.dwg)
         """
         #return self.cv.create_polygon((0, 0, 0, 0, 0, 0), fill="", outline="")
-        return self.cv.add(self.cv.polygon())
+        return self.cv.add(self.cv.polygon(points=[(0,0),(0,0)],fill="",stroke=""))
 
     def _drawpoly(self, polyitem, coordlist, fill=None,
                   outline=None, width=None, top=False):
@@ -674,7 +674,7 @@ class TurtleScreenBase(object):
         polyitem.points = cl
         if fill is not None:
             #self.cv.itemconfigure(polyitem, fill=fill)
-            polyitem.fill = fill
+            polyitem.fill(fill)
         if outline is not None:
             #self.cv.itemconfigure(polyitem, outline=outline)
             polyitem.outline = outline
