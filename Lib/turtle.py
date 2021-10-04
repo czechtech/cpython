@@ -457,6 +457,8 @@ class SVGCanvas():
             bgpic = self._drawing.image(picname)
             self._drawing.elements.insert(1, bgpic)
         self._drawing.elements[1]["xlink:href"] = picname
+        self._drawing.elements[1]["x"] = -self.canvwidth/2   # DJC: image width & height are unknown, canvas is the next best option (yuck)
+        self._drawing.elements[1]["y"] = -self.canvheight/2  # DJC: image width & height are unknown, canvas is the next best option (yuck)
         self._drawing.elements[1]["id"] = 'bgpic'
 
     # Factory Methods
