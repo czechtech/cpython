@@ -1353,7 +1353,7 @@ class TurtleScreen(TurtleScreenBase):
         """
         if shape is None:
             # image
-            if data.lower().startswith("data:") or name.lower().endswith(".gif") or data.lower().endswith(".jpg") or data.lower().endswith(".png") :
+            if name.lower().startswith("data:") or name.lower().endswith(".gif") or name.lower().endswith(".jpg") or name.lower().endswith(".png") :
                 shape = Shape("image", data=name)
             else:
                 raise TurtleGraphicsError("Bad arguments for register_shape.\n"
