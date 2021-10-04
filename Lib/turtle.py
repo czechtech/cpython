@@ -443,19 +443,21 @@ class SVGCanvas():
 
     def bgcolor(self, color):
         self.winfo_rgb(color) # Validate the color name
-        if self._drawing.elements == [] or self._drawing.elements[0]["id"] != 'bgcolor':
+        if self._drawing.elements == [] or "id" not in self._drawing.elements[0].attribs or self._drawing.elements[0]["id"] != 'bgcolor':
             bg = self._drawing.rect(insert=(-self.canvwidth/2,-self.canvheight/2), size=("100%","100%"), id='bgcolor')
             self._drawing.elements.insert(0, bg)
         self._drawing.elements[0]["fill"] = color
+        self._drawing.elements[0]["id"] = 'bgcolor'
     
     def bgpic(self, picname):
         #print("SVGCanvas.bgpic", picname)
-        if self._drawing.elements == [] or self._drawing.elements[0]["id"] != 'bgcolor':
+        if self._drawing.elements == [] or "id" not in self._drawing.elements[0].attribs or self._drawing.elements[0]["id"] != 'bgcolor':
             self.bgcolor("white") # assumption
-        if len(self._drawing.elements) < 2 or self._drawing.elements[1]["id"] != 'bgpic':
+        if len(self._drawing.elements) < 2 or "id" not in self._drawing.elements[1].attribs or self._drawing.elements[1]["id"] != 'bgpic':
             bgpic = self._drawing.image(picname)
             self._drawing.elements.insert(1, bgpic)
-        self._drawing.elements[1]["href"] = picname
+        self._drawing.elements[1]["xlink:href"] = picname
+        self._drawing.elements[1]["id"] = 'bgpic'
 
     # Factory Methods
     #def line(self, start=(0,0), end=(0,0), **extra):
@@ -622,7 +624,7 @@ class TurtleScreenBase(object):
         """
         #img = TK.PhotoImage(width=1, height=1)
         #img.blank()
-        return svg.image.Image("None", width=1, height=1)
+        return TurtleScreenBase._image("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=") # 1x1 transparent PNG
 
     @staticmethod
     def _image(url):
@@ -916,36 +918,35 @@ class TurtleScreenBase(object):
         else:
             self.cv.after(t, fun)
 
-    def _createimage(self, image):
+    def _createimage(self, image_url):
         """Create and return image item on canvas.
         """
-        #return self.cv.create_image(0, 0, image=image)
-        return self.cv.add(self._image(image or "None"))
+        #return self.cv.create_image(0, 0, image=image_url)
+        return self.cv.add(self._image(image_url))
 
-    def _drawimage(self, item, pos, image):
-        """Configure image item as to draw image object
+    def _drawimage(self, item, pos, image_url):
+        """Configure image item as to draw image url
         at position (x,y) on canvas)
         """
         x, y = pos
         #self.cv.coords(item, (x * self.xscale, -y * self.yscale))
-        #self.cv.itemconfig(item, image=image)
-        item = self.dwg.image(image, x=x*self.xscale, y=-y*self.yscale)
+        #self.cv.itemconfig(item, image=image_url)
+        item.update({"x": x*self.xscale, "y":-y*self.yscale, "xlink:href":image_url})
         self.cv.add(item)
 
-    def _setbgpic(self, item, image):
-        """Configure image as to draw image object
+    def _setbgpic(self, item, image_url):
+        """Configure image as to draw image_url
         at center of canvas. Set item to the first item
         in the displaylist, so it will be drawn below
         any other item ."""
-        #self.cv.bgpic(image) # DJC canvas.bgpic may be where this code belongs
-
-        #self.cv.itemconfig(item, image=image)
-        self.cv.add(image) #self.cv.elements.insert(1, item)
-        image["id"] = "bgpic"
-        #self.cv.tag_lower(item)
-        self.cv.elements.remove(item)
-        item = image
-        
+        #self.cv.itemconfig(item, image=image_url)
+        self.cv.bgpic(image_url)
+        item = self.cv._drawing.elements[1]
+        #item.update({"x":-self.cv.canvwidth/2, "y":-self.cv.canvheight/2, "xlink:href":image_url})  # DJC: image width & height are unknown, canvas is the next best option X-(
+        #if "id" not in item.attribs or item["id"] != "bgpic":
+        #    self.cv._drawing.elements.remove(self.cv._drawing.elements[1])
+        #    self.cv._drawing.elements.insert(1, item)
+        #    item["id"] = "bgpic"
 
     def _type(self, item):
         """Return 'line' or 'polygon' or 'image' depending on
@@ -1098,7 +1099,7 @@ class Shape(object):
 
     attribute _type is one of "polygon", "image", "compound"
     attribute _data is - depending on _type a poygon-tuple,
-    an image or a list constructed using the addcomponent method.
+    an image url or a list constructed using the addcomponent method.
     """
     def __init__(self, type_, data=None):
         self._type = type_
@@ -1106,10 +1107,9 @@ class Shape(object):
             if isinstance(data, list):
                 data = tuple(data)
         elif type_ == "image":
-            if isinstance(data, str):
-                if data.lower().endswith(".gif") and isfile(data):
-                    data = TurtleScreen._image(data)
-                # else data assumed to be Photoimage
+            if not isinstance(data, str) or not (data.lower().startswith("data:") or data.lower().endswith(".gif") or data.lower().endswith(".jpg") or data.lower().endswith(".png")):
+                    raise TurtleGraphicsError("Image data is invalid: %s" % data)
+            # else data assumed to be image url
         elif type_ == "compound":
             data = []
         else:
@@ -1207,10 +1207,10 @@ class TurtleScreen(TurtleScreenBase):
                 "triangle" : Shape("polygon", ((10,-5.77), (0,11.55),
                               (-10,-5.77))),
                   "classic": Shape("polygon", ((0,0),(-5,-9),(0,-7),(5,-9))),
-                   "blank" : Shape("image", self._blankimage())
+                   "blank" : Shape("image", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=")
                   }
 
-        self._bgpics = {"nopic" : ""}
+        self._bgpics = {"nopic" : self._blankimage()}
 
         TurtleScreenBase.__init__(self, cv)
         self._mode = mode
@@ -1242,13 +1242,11 @@ class TurtleScreen(TurtleScreenBase):
         self._delayvalue = _CFG["delay"]
         self._colormode = _CFG["colormode"]
         self._delete("all")
-        #self._bgpic = self._createimage("") # DJC
-        #self._bgpicname = "nopic" # DJC
         self._tracing = 1
         self._updatecounter = 0
         self._turtles = []
-        #self.bgpic("") # DJC: this prevents creating a new _image("")
         self.bgcolor("white")
+        self.bgpic("nopic")
         for btn in 1, 2, 3:
             self.onclick(None, btn)
         self.onkeypress(None)
@@ -1356,7 +1354,7 @@ class TurtleScreen(TurtleScreenBase):
         if shape is None:
             # image
             if name.lower().endswith(".gif"):
-                shape = Shape("image", self._image(name))
+                shape = Shape("image", data=name)
             else:
                 raise TurtleGraphicsError("Bad arguments for register_shape.\n"
                                           + "Use  help(register_shape)" )
@@ -1704,8 +1702,9 @@ class TurtleScreen(TurtleScreenBase):
         if picname is None:
             return self._bgpicname
         if picname not in self._bgpics:
-            self._bgpics[picname] = self._image(picname) # DJC: should this be _createimage(picname) instead??
-        self._setbgpic(self._bgpic, self._bgpics[picname])
+            self._bgpics[picname] = self._image(picname)
+        self._bgpic = self._bgpics[picname]
+        self._setbgpic(self._bgpic, picname)
         self._bgpicname = picname
 
     def screensize(self, canvwidth=None, canvheight=None, bg=None):
