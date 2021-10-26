@@ -920,10 +920,14 @@ class TurtleScreenBase(object):
     def _ontimer(self, fun, t):
         """Install a timer, which calls fun after t milliseconds.
         """
-        if t == 0:
-            self.cv.after_idle(fun)
-        else:
-            self.cv.after(t, fun)
+        from google.colab import output
+        output.register_callback('notebook.'+fun.__name__, fun)
+        import IPython
+        display(IPython.display.Javascript("""
+          setTimeout(function () {
+				    google.colab.kernel.invokeFunction('notebook."""+fun.__name__+"""', [], {})
+				  } , """+str(t)+""")
+        """))
 
     def _createimage(self, image_url):
         """Create and return image item on canvas.
