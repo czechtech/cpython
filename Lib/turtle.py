@@ -350,7 +350,7 @@ class SVGCanvas():
         self.width, self.height = width, height
         self._config = {}
         self.canvwidth, self.canvheight = canvwidth, canvheight
-        self._drawing = svg.Drawing(None, profile='tiny', viewBox=_viewbox(canvwidth,canvheight), size=(canvwidth,canvheight))
+        self._drawing = svg.Drawing(None, profile='full', viewBox=_viewbox(canvwidth,canvheight), size=(canvwidth,canvheight))
         self.bg = "white" # DJC: maybe don't do this in the constructor
         #self._canvas = TK.Canvas(master, width=width, height=height,bg=self.bg, relief=TK.SUNKEN, borderwidth=2)
         self._xml = ""
@@ -797,16 +797,21 @@ class TurtleScreenBase(object):
         of the clicked point on the canvas.
         num, the number of the mouse-button defaults to 1
         """
-        #if fun is None:
-        #    self.cv.tag_unbind(item, "<Button-%s>" % num)
-        #else:
-        #    def eventfun(event):
-        #        x, y = (self.cv.canvasx(event.x)/self.xscale,
-        #                -self.cv.canvasy(event.y)/self.yscale)
-        #        fun(x, y)
-        #    self.cv.tag_bind(item, "<Button-%s>" % num, eventfun, add)
-        #print("_onclick not yet supported")
-        pass
+        if fun is None:
+          item['onclick'] = ""
+        else:
+          from google.colab import output
+          output.register_callback('notebook.'+fun.__name__, fun)
+          item['onclick'] = """(function (evt) {
+            svg = document.getElementsByTagName('svg')[0];
+            pt = svg.createSVGPoint();
+            pt.x = evt.clientX;
+            pt.y = evt.clientY;
+            cursorpt =  pt.matrixTransform(svg.getScreenCTM().inverse());
+            cursorpt.y *= -1
+            google.colab.kernel.invokeFunction('notebook."""+fun.__name__+"""', [Math.round(cursorpt.x),Math.round(cursorpt.y)], {});
+          })(evt);"""
+
 
     def _onrelease(self, item, fun, num=1, add=None):
         """Bind fun to mouse-button-release event on turtle.
