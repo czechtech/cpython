@@ -612,6 +612,18 @@ svg {{
 {svgtag}
 """.format(svgtag=svg)
 
+
+_keypress_funcs = {}
+
+def _handleKeyPresses(key):
+  if None in _keypress_funcs.keys():
+    for func in _keypress_funcs[None]:
+      func()
+  if key in _keypress_funcs.keys():
+    for func in _keypress_funcs[key]:
+      func()
+
+
 class TurtleScreenBase(object):
     """Provide the basic graphics functionality.
        Interface between Tkinter and turtle.py.
@@ -895,20 +907,25 @@ class TurtleScreenBase(object):
         Otherwise bind fun to any key-press.
         Canvas must have focus. See method listen.
         """
-        #if fun is None:
-        #    if key is None:
-        #        self.cv.unbind("<KeyPress>", None)
-        #    else:
-        #        self.cv.unbind("<KeyPress-%s>" % key, None)
-        #else:
-        #    def eventfun(event):
-        #        fun()
-        #    if key is None:
-        #        self.cv.bind("<KeyPress>", eventfun)
-        #    else:
-        #        self.cv.bind("<KeyPress-%s>" % key, eventfun)
-        #print("_onkeypress not yet supported")
-        pass
+        global _keypress_funcs
+        if fun is None:
+          _keypress_funcs.pop(key, None)
+          #if len(_keypress_funcs.keys()) == 0:
+          #  display(IPython.display.Javascript("removeEventListener('keypress', colab_onkeypress)"))
+        else:
+          if len(_keypress_funcs.keys()) == 0:
+            import IPython
+            from google.colab import output
+            output.register_callback('turtle.handleKeyPresses', _handleKeyPresses)
+            display(IPython.display.Javascript("""
+              function colab_onkeypress(evt) {
+                google.colab.kernel.invokeFunction('turtle.handleKeyPresses', [evt.key], {})
+              }
+              addEventListener('keypress', colab_onkeypress, false);
+            """))
+          if key not in _keypress_funcs.keys():
+            _keypress_funcs[key] = []
+          _keypress_funcs[key].append(fun)
 
     def _listen(self):
         """Set focus on canvas (in order to collect key-events)
