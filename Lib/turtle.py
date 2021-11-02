@@ -598,19 +598,19 @@ class _Root():
 # https://github.com/czechtech/ColabTurtle/blob/master/ColabTurtle/Turtle.py
 def _generateIPythonHTML(svg):
     return """
-<head>
-<style>
-body {{
-    background-repeat: no-repeat;
-}}
-svg {{
-    border: 1px solid black;
-    filter: drop-shadow(2px 2px 2px #888888)
-}}
-</style>
-</head>
-{svgtag}
-""".format(svgtag=svg)
+      <head>
+        <style>
+          body {{
+              background-repeat: no-repeat;
+          }}
+          svg {{
+              border: 1px solid black;
+              filter: drop-shadow(2px 2px 2px #888888)
+          }}
+        </style>
+      </head>
+      {svgtag}
+    """.format(svgtag=svg)
 
 
 _keypress_funcs = {}
