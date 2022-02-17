@@ -460,7 +460,16 @@ class SVGCanvas():
         self._drawing.elements[1]["x"] = -self.canvwidth/2   # DJC: image width & height are unknown, canvas is the next best option (yuck)
         self._drawing.elements[1]["y"] = -self.canvheight/2  # DJC: image width & height are unknown, canvas is the next best option (yuck)
         self._drawing.elements[1]["id"] = 'bgpic'
-
+    
+    def postscript(self, **kwargs):
+      import cairosvg
+      bstream = self._drawing.tostring().encode('utf-8')
+      if not 'file' in kwargs:
+        return cairosvg.svg2ps(bytestring=bstream)
+      else:
+        cairosvg.svg2ps(bytestring=bstream, write_to=file)
+        return
+    
     # Factory Methods
     #def line(self, start=(0,0), end=(0,0), **extra):
     #    return self._drawing.line(start=start, end=end, **extra)
