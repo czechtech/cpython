@@ -1280,7 +1280,6 @@ class TurtleScreen(TurtleScreenBase):
         self._colormode = _CFG["colormode"]
         self._delete("all")
         self.bgpic("nopic")
-        self.bgpicname = "nopic"
         self._tracing = 1
         self._updatecounter = 0
         self._turtles = []
