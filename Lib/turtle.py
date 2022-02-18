@@ -1740,8 +1740,11 @@ class TurtleScreen(TurtleScreenBase):
             return self._bgpicname
         if picname not in self._bgpics:
             self._bgpics[picname] = self._image(picname)
-        self._bgpic = self._bgpics[picname]
-        self._setbgpic(self._bgpic, picname)
+
+	if picname == "nopic":
+	    self._setbgpic(self._bgpics["nopic"], "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=")
+	else:
+            self._setbgpic(self._bgpics[picname], picname)
         self._bgpicname = picname
 
     def screensize(self, canvwidth=None, canvheight=None, bg=None):
