@@ -465,9 +465,9 @@ class SVGCanvas():
       import cairosvg
       bstream = self._drawing.tostring().encode('utf-8')
       if not 'file' in kwargs:
-        return cairosvg.svg2ps(bytestring=bstream)
+        return str(cairosvg.svg2ps(bytestring=bstream))
       else:
-        cairosvg.svg2ps(bytestring=bstream, write_to=file)
+        cairosvg.svg2ps(bytestring=bstream, write_to=kwargs['file'])
         return
     
     # Factory Methods
