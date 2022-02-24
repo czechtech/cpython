@@ -108,6 +108,7 @@ _ver = "chelonian 0 - Python Turtle for Colab   -  12/2020"
 import svgwrite as svg # https://pypi.org/project/svgwrite/
 import webcolors # to verify colorstring values
 import threading # ontimer events
+import cairosvg # .postscript rendering
 from IPython.display import display, HTML
 import types
 import math
@@ -462,13 +463,13 @@ class SVGCanvas():
         self._drawing.elements[1]["id"] = 'bgpic'
     
     def postscript(self, **kwargs):
-      import cairosvg
-      bstream = self._drawing.tostring().encode('utf-8')
-      if not 'file' in kwargs:
-        return str(cairosvg.svg2ps(bytestring=bstream))
-      else:
-        cairosvg.svg2ps(bytestring=bstream, write_to=kwargs['file'])
-        return
+      return str(cairosvg.svg2ps(
+        bytestring=self._drawing.tostring().encode('utf-8'),
+        parent_width=self.width,
+        parent_height=self.height,
+        write_to=kwargs.get('file'),
+        output_width=kwargs.get('pagewidth'),
+        output_height=kwargs.get('pageheight') ))
     
     # Factory Methods
     #def line(self, start=(0,0), end=(0,0), **extra):
