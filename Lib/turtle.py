@@ -3338,6 +3338,7 @@ class RawTurtle(TPen, TNavigator):
                                  outline=self._cc(oc), width=self._outlinewidth, top=True)
         self.stampItems.append(stitem)
         self.undobuffer.push(("stamp", stitem))
+        self._update()
         return stitem
 
     def _clearstamp(self, stampid):
