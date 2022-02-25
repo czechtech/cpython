@@ -465,8 +465,8 @@ class SVGCanvas():
     def postscript(self, **kwargs):
       return cairosvg.svg2ps(
         bytestring=self._drawing.tostring().encode('utf-8'),
-        output_width = kwargs.get('pagewidth') * 1.3333, # DJC: Why??
-        output_height = kwargs.get('pageheight') * 1.3333, # DJC: Why??
+        output_width = kwargs.get('pagewidth') * 1.3333, # 4/3 ratio of svg pixels to ps points
+        output_height = kwargs.get('pageheight') * 1.3333, # 4/3 ratio of svg pixels to ps points
         write_to=kwargs.get('file') ).decode('utf-8')
     
     # Factory Methods
