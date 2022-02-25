@@ -463,11 +463,11 @@ class SVGCanvas():
         self._drawing.elements[1]["id"] = 'bgpic'
     
     def postscript(self, **kwargs):
-      return str(cairosvg.svg2ps(
+      return cairosvg.svg2ps(
         bytestring=self._drawing.tostring().encode('utf-8'),
         output_width = kwargs.get('pagewidth') * 1.3333, # DJC: Why??
         output_height = kwargs.get('pageheight') * 1.3333, # DJC: Why??
-        write_to=kwargs.get('file') ))
+        write_to=kwargs.get('file') ).decode('utf-8')
     
     # Factory Methods
     #def line(self, start=(0,0), end=(0,0), **extra):
