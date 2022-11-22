@@ -961,8 +961,8 @@ class TurtleScreenBase(object):
         display(IPython.display.Javascript("""
           setTimeout(function () {
         			    google.colab.kernel.invokeFunction('notebook."""+fun.__name__+"""', [], {})
-        			  } , """+str(t)+""").catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler', [err.name,err.message], {}) } )
-        """))
+        			  } , """+str(t)+""")
+        """)).catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler', [err.name,err.message], {}) } )
 
     def _createimage(self, image_url):
         """Create and return image item on canvas.
