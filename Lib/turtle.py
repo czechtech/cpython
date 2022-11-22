@@ -821,8 +821,8 @@ class TurtleScreenBase(object):
           item['onclick'] = ""
         else:
           from google.colab import output
-	  import asyncio
-	  output.register_callback('call_exception_handler',
+          import asyncio
+          output.register_callback('call_exception_handler',
                          lambda name, message :
                            asyncio.get_event_loop().call_exception_handler( {'message': message, 'exception': RuntimeError()} ) )
           output.register_callback('notebook.'+fun.__name__, fun)
@@ -833,8 +833,7 @@ class TurtleScreenBase(object):
             pt.y = evt.clientY;
             cursorpt =  pt.matrixTransform(svg.getScreenCTM().inverse());
             cursorpt.y *= -1
-            google.colab.kernel.invokeFunction('notebook."""+fun.__name__+"""', [Math.round(cursorpt.x),Math.round(cursorpt.y)], {})
-	      .catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler',[err.name,err.message],{}) } )
+            google.colab.kernel.invokeFunction('notebook."""+fun.__name__+"""', [Math.round(cursorpt.x),Math.round(cursorpt.y)], {}).catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler',[err.name,err.message],{}) } )
           })(evt);"""
 
 
@@ -928,7 +927,7 @@ class TurtleScreenBase(object):
         else:
           if len(_keypress_funcs.keys()) == 0:
             import IPython
-	    import asyncio
+            import asyncio
             from google.colab import output
             output.register_callback('call_exception_handler',
                          lambda name, message :
@@ -936,8 +935,7 @@ class TurtleScreenBase(object):
             output.register_callback('turtle.handleKeyPresses', _handleKeyPresses)
             display(IPython.display.Javascript("""
               function colab_onkeypress(evt) {
-                google.colab.kernel.invokeFunction('turtle.handleKeyPresses', [evt.key], {})
-		  .catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler',[err.name,err.message],{}) } )
+                google.colab.kernel.invokeFunction('turtle.handleKeyPresses', [evt.key], {}).catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler',[err.name,err.message],{}) } )
               }
               addEventListener('keypress', colab_onkeypress, false);
             """))
