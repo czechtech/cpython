@@ -954,12 +954,14 @@ class TurtleScreenBase(object):
         """Install a timer, which calls fun after t milliseconds.
         """
         from google.colab import output
-        output.register_callback('notebook.'+fun.__name__, fun)
+        import asyncio
+        output.register_callback('call_exception_handler', lambda name, message : asyncio.get_event_loop().call_exception_handler( {'message': message, 'exception': RuntimeError()} ) )
+	output.register_callback('notebook.'+fun.__name__, fun)
         import IPython
         display(IPython.display.Javascript("""
           setTimeout(function () {
 				    google.colab.kernel.invokeFunction('notebook."""+fun.__name__+"""', [], {})
-				  } , """+str(t)+""")
+				  } , """+str(t)+""").catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler', [err.name,err.message], {}) } )
         """))
 
     def _createimage(self, image_url):
