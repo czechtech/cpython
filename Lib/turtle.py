@@ -376,7 +376,7 @@ class SVGCanvas():
         return self._drawing.add(element)
     
     def delete(self, item):
-        if item is not "all":
+        if item != "all":
             self._drawing.elements.remove(item)
         else:
             self._drawing.elements.clear()
