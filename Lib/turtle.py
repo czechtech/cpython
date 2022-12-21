@@ -936,6 +936,7 @@ class TurtleScreenBase(object):
             display(IPython.display.Javascript("""
               function colab_onkeypress(evt) {
                 k = evt.key
+                console.log(k)
                 if k.includes("Arrow") {
                   k.replace("Arrow","")
                 }
