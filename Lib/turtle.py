@@ -935,11 +935,11 @@ class TurtleScreenBase(object):
             output.register_callback('turtle.handleKeyPresses', _handleKeyPresses)
             display(IPython.display.Javascript("""
               function colab_onkeypress(evt) {
-                key = evt.key
-                if key.includes("Arrow") {
-                  key.replace("Arrow","")
+                k = evt.key
+                if k.includes("Arrow") {
+                  k.replace("Arrow","")
                 }
-                google.colab.kernel.invokeFunction('turtle.handleKeyPresses', [key], {}).catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler',[err.name,err.message],{}) } )
+                google.colab.kernel.invokeFunction('turtle.handleKeyPresses', [k], {}).catch((err) => { google.colab.kernel.invokeFunction('call_exception_handler',[err.name,err.message],{}) } )
               }
               addEventListener('keypress', colab_onkeypress, false);
             """))
