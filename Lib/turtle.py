@@ -1080,6 +1080,15 @@ class TurtleScreenBase(object):
         #self.cv._drawing["style"] = "border: 1px solid red;"
         self._update()
         #print(self.cv.xmlstring())
+        
+        #import time
+        #try:
+        #  while True:
+        #    time.sleep(1)
+        #except KeyboardInterrupt:
+        #  # TODO: delete all javascript event handlers (keys, time, etc.)
+        #  # TODO: delete all turtles?
+        #  pass
 
     def textinput(self, title, prompt):
         """Pop up a dialog window for input of a string.
