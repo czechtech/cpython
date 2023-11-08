@@ -797,11 +797,18 @@ class TurtleScreenBase(object):
         x, y = pos
         x = x * self.xscale
         y = -y * self.yscale
-        f_family, f_size, f_weight = font
+        f_family, f_size, f_sw = font
+        # SVG & python font weight/style are slightly different...
+        f_style = "normal"
+        f_weight = "normal"
+        if f_sw in ["italic","oblique"]:
+          f_style = f_sw
+        if f_sw in ["bold","bolder","lighter"]:
+          f_weight = f_sw
         #anchor = {"left":"sw", "center":"s", "right":"se" }
         anchor = {"left":"start", "center":"middle", "right":"end"}
         #item = self.cv.create_text(x-1, -y, text = txt, anchor = anchor[align], fill = pencolor, font = font)
-        item = self.cv.text(txt, insert=(x,y), fill=pencolor, text_anchor=anchor[align], font_family=f_family, font_weight=f_weight, font_size=f_size)
+        item = self.cv.text(txt, insert=(x,y), fill=pencolor, text_anchor=anchor[align], font_family=f_family, font_weight=f_weight, font_style=f_style, font_size=f_size)
         #x0, y0, x1, y1 = self.cv.bbox(item)
         x1 = x + len(txt) * 1.333 * 0.5 * f_size # DJC: VERY approximate! 1.3 is pt->px, 0.5 is monospace ratio width:height
         self.cv.add(item)
