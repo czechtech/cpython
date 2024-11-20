@@ -3350,7 +3350,7 @@ class RawTurtle(TPen, TNavigator):
             screen._drawpoly(stitem, shape, fill=fc, outline=oc,
                                                   width=w, top=True)
         elif ttype == "image":
-            stitem = screen._createimage("")
+            stitem = screen._createimage(self.turtle.shapeIndex) # image url
             screen._drawimage(stitem, self._position, tshape)
         elif ttype == "compound":
             stitem = []
