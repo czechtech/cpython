@@ -1110,9 +1110,43 @@ class TurtleScreenBase(object):
         >>> screen.textinput("NIM", "Name of first player:")
 
         """
-        #return simpledialog.askstring(title, prompt)
-        #print("textinput not supported yet")
-        return None
+        import IPython
+        display(IPython.display.Javascript(f"""
+          modalDialog = document.createElement("div");
+          modalDialog.id = "modal_for_textinput";
+          modalDialog.style.position = "fixed";
+          modalDialog.style.top = "8px"; /* colab 8px padding */
+          modalDialog.style.left = "6px"; /* colab 6px padding */
+          modalDialog.style.width = "{self.canvwidth}px";
+          modalDialog.style.height = "{self.canvheight}px";
+          modalDialog.style.zIndex = "999";
+          modalDialog.style.backgroundColor = "rgba(0, 0, 0, 0.25)";
+          modalDialog.style.display = "flex";
+          modalDialog.style.justifyContent = "center";
+          modalDialog.style.alignItems = "center";
+          modalDialog.hidden = false;
+          modalDialog.textContent = "{prompt}";
+          textInput = document.createElement("input");
+          textInput.id = "text_input";
+          textInput.type = "text";
+          okButton = document.createElement("input");
+          okButton.type = "button";
+          okButton.value = "ok";
+          okButton.onclick = function(){{document.getElementById("modal_for_textinput").hidden=true;}};
+          modalDialog.appendChild(textInput);
+          modalDialog.appendChild(okButton);
+          document.getElementById("output-area").appendChild(modalDialog);
+          /* Disable click & keypress Events */
+        """))
+        # Wait until element is hidden
+        from google.colab import output
+        import time
+        while not output.eval_js("""document.getElementById("modal_for_textinput").hidden;"""):
+          time.sleep(0.1)
+        # Get the value and remove dialog elements
+        value = output.eval_js("""document.getElementById("text_input").value""")
+        display(IPython.display.Javascript("""document.getElementById("modal_for_textinput").remove();"""))
+        return str(value)
 
     def numinput(self, title, prompt, default=None, minval=None, maxval=None):
         """Pop up a dialog window for input of a number.
@@ -1132,9 +1166,44 @@ class TurtleScreenBase(object):
         >>> screen.numinput("Poker", "Your stakes:", 1000, minval=10, maxval=10000)
 
         """
-        #print("numinput not supported yet")
-        return None
-        #return simpledialog.askfloat(title, prompt, initialvalue=default, minvalue=minval, maxvalue=maxval)
+        import IPython
+        display(IPython.display.Javascript(f"""
+          modalDialog = document.createElement("div");
+          modalDialog.id = "modal_for_textinput";
+          modalDialog.style.position = "fixed";
+          modalDialog.style.top = "8px"; /* colab 8px padding */
+          modalDialog.style.left = "6px"; /* colab 6px padding */
+          modalDialog.style.width = "{self.canvwidth}px";
+          modalDialog.style.height = "{self.canvheight}px";
+          modalDialog.style.zIndex = "999";
+          modalDialog.style.backgroundColor = "rgba(0, 0, 0, 0.25)";
+          modalDialog.style.display = "flex";
+          modalDialog.style.justifyContent = "center";
+          modalDialog.style.alignItems = "center";
+          modalDialog.hidden = false;
+          modalDialog.textContent = "{prompt}";
+          textInput = document.createElement("input");
+          textInput.id = "text_input";
+          textInput.type = "text";
+          okButton = document.createElement("input");
+          okButton.type = "button";
+          okButton.value = "ok";
+          okButton.onclick = function(){{document.getElementById("modal_for_textinput").hidden=true;}};
+          modalDialog.appendChild(textInput);
+          modalDialog.appendChild(okButton);
+          document.getElementById("output-area").appendChild(modalDialog);
+          /* Disable click & keypress Events */
+        """))
+        # Wait until element is hidden
+        from google.colab import output
+        import time
+        while not output.eval_js("""document.getElementById("modal_for_textinput").hidden;"""):
+          time.sleep(0.1)
+        # Get the value and remove dialog elements
+        value = output.eval_js("""document.getElementById("text_input").value""")
+        display(IPython.display.Javascript("""document.getElementById("modal_for_textinput").remove();"""))
+        return float(value)
+
 
 
 ##############################################################################
